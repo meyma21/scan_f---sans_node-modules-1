@@ -1,0 +1,59 @@
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+ 
+
+interface SimulatorControlContextType {
+  sendCommand: (command: string) => void;
+  isConnected: boolean;
+}
+
+const SimulatorControlContext = createContext<SimulatorControlContextType | undefined>(undefined);
+
+export function SimulatorControlProvider({ children }: { children: React.ReactNode }) {
+  const wsRef = useRef<WebSocket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8080/simulator-control');
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setIsConnected(true);
+      console.log('✅ Connecté au canal de commande simulateur');
+    };
+
+    ws.onclose = () => {
+      setIsConnected(false);
+      console.log('❌ WebSocket commande fermé');
+    };
+
+    ws.onerror = (err) => {
+      console.error('🚨 Erreur WebSocket commande', err);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
+  const sendCommand = (command: string) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ command }));
+    } else {
+      console.warn('❌ WebSocket non prêt pour envoyer la commande');
+    }
+  };
+
+  
+  return (
+    <SimulatorControlContext.Provider value={{
+      sendCommand,
+      isConnected
+    }}>
+      {children}
+    </SimulatorControlContext.Provider>
+  );
+}
+
+export function useSimulatorControl() {
+  return useContext(SimulatorControlContext);
+}

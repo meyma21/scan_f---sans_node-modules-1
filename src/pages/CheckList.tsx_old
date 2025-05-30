@@ -1,0 +1,168 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Plus, Trash2, RefreshCw } from 'lucide-react';
+import { useCheckStore } from '../store/checkStore';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import CheckImageViewer from '../components/check/CheckImageViewer';
+import CheckDetailPanel from '../components/check/CheckDetailPanel';
+import { formatCurrency } from '../utils/formatters';
+import { CheckData, CheckStatus } from '../types';
+
+const CheckList: React.FC = () => {
+  const navigate = useNavigate();
+  const { checks, fetchChecks, selectCheck } = useCheckStore();
+  const [selectedCheck, setSelectedCheck] = useState<CheckData | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleScan = () => {
+    setIsScanning(true);
+    // Simulate scan delay
+    setTimeout(() => {
+      setIsScanning(false);
+      simulateScan();
+    }, 2000);
+  };
+
+  const simulateScan = () => {
+    // Fetch checks to simulate a new scan
+    fetchChecks();
+  };
+
+  const handleReset = () => {
+    // Reset functionality can be implemented if needed
+    setSelectedCheck(null);
+  };
+
+  const handleDelete = (id: string) => {
+    // Delete functionality can be implemented if needed
+    console.log('Delete not implemented yet');
+  };
+
+  const totalAmount = checks.reduce((sum, check) => sum + (check.amount || 0), 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 bg-primary-600 text-white">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}
+          className="text-white"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleScan}
+            disabled={isScanning}
+            className="bg-white text-primary-600"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Numériser
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            className="bg-gray-100 text-gray-700"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Remise à zéro
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Table Section */}
+        <Card>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 text-left">Numéro</th>
+                  <th className="px-4 py-2 text-left">Montant</th>
+                  <th className="px-4 py-2 text-left">Banque</th>
+                  <th className="px-4 py-2 text-left">Date</th>
+                  <th className="px-4 py-2 text-left">Statut</th>
+                  <th className="px-4 py-2 text-left">Image</th>
+                </tr>
+              </thead>
+              <tbody>
+                {checks.map((check) => (
+                  <tr
+                    key={check.id}
+                    className={`hover:bg-gray-50 ${
+                      check.status === 'OK' as string ? 'bg-green-50' :
+                      check.status === 'WARNING' as string ? 'bg-yellow-50' :
+                      'bg-red-50'
+                    }`}
+
+                    onClick={() => setSelectedCheck(check)}
+                  >
+                    <td className="px-4 py-2">{check.checkNumber}</td>
+                    <td className="px-4 py-2">{formatCurrency(check.amount)}</td>
+                    <td className="px-4 py-2">{check.issuer.name}</td>
+                    <td className="px-4 py-2">{check.date}</td>
+                    <td className="px-4 py-2">{check.status}</td>
+                    <td className="px-4 py-2">
+                      <img
+                        src={`https://via.placeholder.com/80x40?text=${check.checkNumber}`}
+                        alt={`Chèque ${check.checkNumber}`}
+                        className="w-20 rounded"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        {/* Details Section */}
+        <Card>
+          <div className="space-y-6">
+            {/* Summary */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h3 className="text-lg font-semibold mb-2">Remises Client</h3>
+              <div className="space-y-2">
+                <p className="text-sm">
+                  Nb Chèques Numérisés : <strong>{checks.length}</strong>
+                </p>
+                <p className="text-sm">
+                  Montant Total : <strong>{formatCurrency(totalAmount)}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Check Details */}
+            {selectedCheck && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Détails du Chèque</h3>
+                  <Button
+                    variant="outline"
+                    color="danger"
+                    size="sm"
+                    onClick={() => handleDelete(selectedCheck.id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Supprimer
+                  </Button>
+                </div>
+                
+                <CheckImageViewer images={selectedCheck.images} />
+                
+                <CheckDetailPanel check={selectedCheck} />
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default CheckList;

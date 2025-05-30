@@ -1,0 +1,1 @@
+D:\Projects\ocerisation\simulated-scanner>mvn compile exec:java -Dexec.mainClass="org.example.SimulatedScanner" D:\Projects\ocerisation\backend-scanner>mvn spring-boot:run
